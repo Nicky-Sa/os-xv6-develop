@@ -7,7 +7,7 @@
 #include "proc.h"
 #include "spinlock.h"
 
-#define SYSCALLS_NUMBER 26
+#define SYSCALLS_NUMBER 27
 
 struct
 {
@@ -92,6 +92,7 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->priority = 3; // initializing the priority
 
   release(&ptable.lock);
 
@@ -120,8 +121,6 @@ found:
   // initializing calling times for each syscall to 0 at the beginning of the process creation
   for (int i = 0; i < SYSCALLS_NUMBER; i++)
     p->sysCall_count[i] = 0;
-  // initializing the priority
-  p->priority = 3;
 
   p->creationTime = ticks;
   p->terminationTime = 0;
@@ -284,6 +283,8 @@ void exit(void)
   }
 
   // Jump into the scheduler, never to return.
+  curproc->terminationTime = ticks;
+
   curproc->state = ZOMBIE;
   sched();
   panic("zombie exit");
@@ -350,6 +351,7 @@ int selectedScheduler = 0; // 0 = Default , 1 = Modified RR , 2 = Priority based
 void scheduler(void)
 {
   struct proc *p;
+  struct proc *p1;
   struct cpu *c = mycpu();
   c->proc = 0;
 
@@ -371,32 +373,29 @@ void scheduler(void)
           continue;
 
         highp = p;
-        struct proc *p1;
         for (p1 = highp; p1 < &ptable.proc[NPROC]; p1++)
         {
           if (p1->state != RUNNABLE)
             continue;
 
-          if (p1->state < highp->state)
+          if (p1->priority < highp->priority)
             highp = p1;
         }
+        p = highp;
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
       }
-      c->proc = highp;
-      switchuvm(highp);
-      highp->state = RUNNING;
-
-      swtch(&(c->scheduler), highp->context);
-      switchkvm();
-
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      c->proc = 0;
       release(&ptable.lock);
     }
-    else if (selectedScheduler == 1) // 1 = Modified RR
-    {
-    }
-    else if (selectedScheduler == 0) // 0 = Default
+    else // 0 = Default , 1 = Modified RR
     {
       // Loop over process table looking for process to run.
       acquire(&ptable.lock);
@@ -627,11 +626,63 @@ void updateTimes()
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
     if (p->state == RUNNING)
+    {
       p->runningTime++;
+    }
     else if (p->state == RUNNABLE)
+    {
       p->readyTime++;
+    }
     else if (p->state == SLEEPING)
+    {
       p->sleepingTime++;
+    }
   }
   release(&ptable.lock);
+}
+
+int waitWithTimings(struct timing *times)
+{
+  struct proc *p;
+  int havekids, pid;
+  struct proc *curproc = myproc();
+    
+  acquire(&ptable.lock);
+  for(;;){
+    // Scan through table looking for exited children.
+    havekids = 0;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->parent != curproc)
+        continue;
+      havekids = 1;
+      if(p->state == ZOMBIE){
+        // Found one.
+        pid = p->pid;
+        kfree(p->kstack);
+        p->kstack = 0;
+        freevm(p->pgdir);
+        p->pid = 0;
+        p->parent = 0;
+        p->name[0] = 0;
+        p->killed = 0;
+        p->state = UNUSED;
+        release(&ptable.lock);
+        times->creationTime = p->creationTime;
+        times->readyTime = p->readyTime;
+        times->runningTime = p->runningTime;
+        times->sleepingTime = p->sleepingTime;
+        times->terminationTime = p->terminationTime;
+        return pid;
+      }
+    }
+
+    // No point waiting if we don't have any children.
+    if(!havekids || curproc->killed){
+      release(&ptable.lock);
+      return -1;
+    }
+
+    // Wait for children to exit.  (See wakeup1 call in proc_exit.)
+    sleep(curproc, &ptable.lock);  //DOC: wait-sleep
+  }
 }

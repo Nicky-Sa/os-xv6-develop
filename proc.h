@@ -44,7 +44,7 @@ enum procstate
   ZOMBIE
 };
 
-#define SYSCALLS_NUMBER 26
+#define SYSCALLS_NUMBER 27
 
 // Per-process state
 struct proc
@@ -71,6 +71,14 @@ struct proc
   uint sleepingTime;
 };
 
+struct timing
+{
+  uint creationTime;
+  uint terminationTime;
+  uint runningTime;
+  uint readyTime;
+  uint sleepingTime;
+};
 
 // Process memory is laid out contiguously, low addresses first:
 //   text

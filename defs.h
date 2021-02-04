@@ -4,6 +4,7 @@ struct file;
 struct inode;
 struct pipe;
 struct proc;
+struct timing;
 struct rtcdate;
 struct spinlock;
 struct sleeplock;
@@ -121,6 +122,8 @@ int             wait(void);
 void            wakeup(void*);
 void            yield(void);
 int             getChildren(int currentPid);
+void            updateTimes();
+int             waitWithTimings(struct timing *);
 
 int             selectedScheduler;
 
@@ -167,8 +170,7 @@ void            idtinit(void);
 extern uint     ticks;
 void            tvinit(void);
 extern struct spinlock tickslock;
-extern struct spinlock tcounterlock;
-extern uint     tcounter;
+
 
 
 // uart.c

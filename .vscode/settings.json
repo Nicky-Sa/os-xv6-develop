@@ -1,0 +1,7 @@
+{
+    "editor.accessibilityPageSize": 15,
+    "editor.fontSize": 24,
+    "files.associations": {
+        "limits": "cpp"
+    }
+}

@@ -129,3 +129,10 @@ int sys_changePolicy(void)
   }
   return -1;
 }
+
+int sys_waitWithTimings(void)
+{
+  struct timing *times;
+  argptr(0, (void *)&times, sizeof(times));
+  return waitWithTimings(times);
+}
