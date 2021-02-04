@@ -7,6 +7,8 @@
 #include "proc.h"
 #include "spinlock.h"
 
+#define SYSCALLS_NUMBER 26
+
 struct
 {
   struct spinlock lock;
@@ -116,8 +118,16 @@ found:
   p->context->eip = (uint)forkret;
 
   // initializing calling times for each syscall to 0 at the beginning of the process creation
-  for (int i = 0; i < 24; i++)
+  for (int i = 0; i < SYSCALLS_NUMBER; i++)
     p->sysCall_count[i] = 0;
+  // initializing the priority
+  p->priority = 3;
+
+  p->creationTime = ticks;
+  p->terminationTime = 0;
+  p->runningTime = 0;
+  p->readyTime = 0;
+  p->sleepingTime = 0;
 
   return p;
 }
@@ -334,6 +344,9 @@ int wait(void)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
+
+int selectedScheduler = 0; // 0 = Default , 1 = Modified RR , 2 = Priority based
+
 void scheduler(void)
 {
   struct proc *p;
@@ -345,28 +358,69 @@ void scheduler(void)
     // Enable interrupts on this processor.
     sti();
 
-    // Loop over process table looking for process to run.
-    acquire(&ptable.lock);
-    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    if (selectedScheduler == 2) // 2 = Priority based
     {
-      if (p->state != RUNNABLE)
-        continue;
+      acquire(&ptable.lock);
+      // Loop over process table looking for the process with the highest priority.
 
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
+      struct proc *highp = 0;
 
-      swtch(&(c->scheduler), p->context);
+      for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+      {
+        if (p->state != RUNNABLE)
+          continue;
+
+        highp = p;
+        struct proc *p1;
+        for (p1 = highp; p1 < &ptable.proc[NPROC]; p1++)
+        {
+          if (p1->state != RUNNABLE)
+            continue;
+
+          if (p1->state < highp->state)
+            highp = p1;
+        }
+      }
+      c->proc = highp;
+      switchuvm(highp);
+      highp->state = RUNNING;
+
+      swtch(&(c->scheduler), highp->context);
       switchkvm();
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       c->proc = 0;
+      release(&ptable.lock);
     }
-    release(&ptable.lock);
+    else if (selectedScheduler == 1) // 1 = Modified RR
+    {
+    }
+    else if (selectedScheduler == 0) // 0 = Default
+    {
+      // Loop over process table looking for process to run.
+      acquire(&ptable.lock);
+      for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+      {
+        if (p->state != RUNNABLE)
+          continue;
+
+        // Switch to chosen process.  It is the process's job
+        // to release ptable.lock and then reacquire it
+        // before jumping back to us.
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+      }
+      release(&ptable.lock);
+    }
   }
 }
 
@@ -564,4 +618,20 @@ int getChildren(int currentPid)
   }
   release(&ptable.lock);
   return childrenIDs;
+}
+
+void updateTimes()
+{
+  struct proc *p;
+  acquire(&ptable.lock);
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->state == RUNNING)
+      p->runningTime++;
+    else if (p->state == RUNNABLE)
+      p->readyTime++;
+    else if (p->state == SLEEPING)
+      p->sleepingTime++;
+  }
+  release(&ptable.lock);
 }
