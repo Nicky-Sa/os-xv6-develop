@@ -75,7 +75,6 @@ allocproc(void)
 {
   struct proc *p;
   char *sp;
-
   acquire(&ptable.lock);
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
@@ -330,20 +329,35 @@ scheduler(void)
     // Enable interrupts on this processor.
     sti();
 
+
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+    struct proc *highp;
+
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
 
+      highp = p;
+      struct proc *p1;
+      for (p1 = highp; p1 < &ptable.proc[NPROC]; p1++){
+        if (p1->state != RUNNABLE)
+          continue;
+        
+        if(p1->state < highp->state)
+          highp = p1;
+      }
+      
+      
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
+      
+      c->proc = highp;
+      switchuvm(highp);
+      highp->state = RUNNING;
 
-      swtch(&(c->scheduler), p->context);
+      swtch(&(c->scheduler), highp->context);
       switchkvm();
 
       // Process is done running for now.
