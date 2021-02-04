@@ -122,6 +122,8 @@ void            wakeup(void*);
 void            yield(void);
 int             getChildren(int currentPid);
 
+int             selectedScheduler;
+
 // swtch.S
 void            swtch(struct context**, struct context*);
 
@@ -165,6 +167,7 @@ void            idtinit(void);
 extern uint     ticks;
 void            tvinit(void);
 extern struct spinlock tickslock;
+
 
 // uart.c
 void            uartinit(void);
