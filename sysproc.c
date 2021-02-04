@@ -101,3 +101,31 @@ int sys_getSyscallCounter(void)
   argint(0, &number);
   return myproc()->sysCall_count[number];
 }
+
+int sys_setPriority(void)
+{
+  int p;
+  argint(0, &p);
+  if (p > 6 || p < 1)
+  {
+    p = 5;
+  }
+
+  myproc()->priority = p;
+
+  if (myproc()->priority == p)
+    return 1;
+  return -1;
+}
+
+int sys_changePolicy(void)
+{
+  int policy;
+  argint(0, &policy);
+  if (policy == 0 || policy == 1 || policy == 2)
+  {
+    selectedScheduler = policy;
+    return 1;
+  }
+  return -1;
+}
