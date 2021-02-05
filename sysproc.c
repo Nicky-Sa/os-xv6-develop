@@ -145,14 +145,6 @@ int sys_waitWithTimings(void)
   return waitWithTimings(times);
 }
 
-int sys_setQueueCapacity(void)
-{
-  argint(0, &q1_capacity);
-  argint(1, &q2_capacity);
-  argint(2, &q3_capacity);
-  argint(3, &q4_capacity);
-  return 1;
-}
 
 int sys_setQueue(void)
 {

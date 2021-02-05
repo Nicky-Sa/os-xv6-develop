@@ -30,7 +30,6 @@ int getSyscallCounter(int);
 int setPriority(int priority);
 int changePolicy(int policy);
 int waitWithTimings(struct timing *);
-int setQueueCapacity(int q1, int q2, int q3, int q4);
 int setQueue(int q);
 
 

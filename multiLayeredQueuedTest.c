@@ -14,8 +14,6 @@ struct timing
 int main(void)
 {
     changePolicy(3); // 3 stands for MultiLayered
-    setQueueCapacity(10, 10, 10, 10);
-
     int i = 0;
     int j = 0;
     int k = 0;

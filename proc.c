@@ -7,7 +7,7 @@
 #include "proc.h"
 #include "spinlock.h"
 
-#define SYSCALLS_NUMBER 32
+#define SYSCALLS_NUMBER 28
 
 struct
 {

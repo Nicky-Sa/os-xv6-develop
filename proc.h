@@ -44,7 +44,7 @@ enum procstate
   ZOMBIE
 };
 
-#define SYSCALLS_NUMBER 32
+#define SYSCALLS_NUMBER 28
 
 // Per-process state
 struct proc

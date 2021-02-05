@@ -35,6 +35,5 @@ SYSCALL(getSyscallCounter)
 SYSCALL(setPriority)
 SYSCALL(changePolicy)
 SYSCALL(waitWithTimings)
-SYSCALL(setQueueCapacity)
 SYSCALL(setQueue)
 

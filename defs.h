@@ -128,10 +128,6 @@ int             waitWithTimings(struct timing *);
 // global
 int             selectedScheduler;
 int             RR_active;
-int             q1_capacity;
-int             q2_capacity;
-int             q3_capacity;
-int             q4_capacity;
 
 
 
