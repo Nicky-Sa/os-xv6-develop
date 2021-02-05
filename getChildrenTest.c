@@ -7,11 +7,14 @@ int main()
 
     int p1 = fork();
     int p2 = fork();
+    int p3 = fork();
 
     if (p1 > 0)
-        sleep(30);
+        sleep(40);
     if (p2 > 0)
-        sleep(10);
+        sleep(30);
+    if (p3 > 0)
+        sleep(20);
 
     // Extracting the children
     int tmp = getChildren();

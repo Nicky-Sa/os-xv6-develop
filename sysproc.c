@@ -122,9 +122,17 @@ int sys_changePolicy(void)
 {
   int policy;
   argint(0, &policy);
-  if (policy == 0 || policy == 1 || policy == 2)
+  if (policy == 0 || policy == 1 || policy == 2 || policy == 3)
   {
     selectedScheduler = policy;
+    if (selectedScheduler == 1) // RR
+    {
+      RR_active = 1; // to distinguish trap.c and proc.c
+    }
+    else
+    {
+      RR_active = 0;
+    }
     return 1;
   }
   return -1;
@@ -135,4 +143,29 @@ int sys_waitWithTimings(void)
   struct timing *times;
   argptr(0, (void *)&times, sizeof(times));
   return waitWithTimings(times);
+}
+
+int sys_setQueueCapacity(void)
+{
+  argint(0, &q1_capacity);
+  argint(1, &q2_capacity);
+  argint(2, &q3_capacity);
+  argint(3, &q4_capacity);
+  return 1;
+}
+
+int sys_setQueue(void)
+{
+  int q;
+  argint(0, &q);
+  if (q > 4 || q < 1)
+  {
+    q = 1; // default queue
+  }
+
+  myproc()->queue = q;
+
+  if (myproc()->queue == q)
+    return 1;
+  return -1;
 }

@@ -107,7 +107,7 @@ void trap(struct trapframe *tf)
   if (myproc() && myproc()->state == RUNNING &&
       tf->trapno == T_IRQ0 + IRQ_TIMER)
   {
-    if (selectedScheduler == 1)
+    if (RR_active == 1)
     {
       if (ticks % QUANTUM == 0)
       {

@@ -26,3 +26,8 @@
 #define SYS_setPriority 25
 #define SYS_changePolicy 26
 #define SYS_waitWithTimings 27
+#define SYS_setQueueCapacity 28
+#define SYS_setQueue 29
+// #define SYS_setQueue2 30
+// #define SYS_setQueue3 31
+// #define SYS_setQueue4 32

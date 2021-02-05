@@ -44,7 +44,7 @@ enum procstate
   ZOMBIE
 };
 
-#define SYSCALLS_NUMBER 27
+#define SYSCALLS_NUMBER 32
 
 // Per-process state
 struct proc
@@ -64,6 +64,7 @@ struct proc
   char name[16];                      // Process name (debugging)
   int sysCall_count[SYSCALLS_NUMBER]; // To count the number of each syscall calls. index = syscall number, value = calling times
   int priority;
+  int queue;
   uint creationTime;
   uint terminationTime;
   uint runningTime;

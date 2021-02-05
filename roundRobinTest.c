@@ -24,7 +24,7 @@ int main(void)
     {
         if (fork() == 0) // child process
         {
-            for (i = 0; i < 1000; i++)
+            for (i = 1; i < 1000; i++)
             {
                 printf(1, "[%d]: [%d] \n", getpid(), i);
             }

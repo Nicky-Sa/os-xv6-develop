@@ -37,7 +37,7 @@ int main(void)
             else if (25 <= j && j <= 29)
                 setPriority(1);
 
-            for (i = 0; i < 250; i++)
+            for (i = 1; i < 250; i++)
                 printf(1, "[%d]:[%d] \n", j, i);
             exit();
         }
@@ -45,10 +45,6 @@ int main(void)
 
     for (k = 0; k < 30; k++)
         pids[k] = waitWithTimings(&times[k]);
-
-    int sumTurnaroundTime = 0;
-    int sumCBT = 0;
-    int sumWaitingTime = 0;
 
     // sorting
     struct timing tmp;
@@ -79,52 +75,60 @@ int main(void)
         pids[i] = pid_tmp;
     }
 
-    int sumTurnaroundTime6 = 0, sumTurnaroundTime5 = 0, sumTurnaroundTime4 = 0, sumTurnaroundTime3 = 0, sumTurnaroundTime2 = 0, sumTurnaroundTime1 = 0;
-    int sumCBT6 = 0, sumCBT5 = 0, sumCBT4 = 0, sumCBT3 = 0, sumCBT2 = 0, sumCBT1 = 0;
-    int sumWaitingTime6 = 0, sumWaitingTime5 = 0, sumWaitingTime4 = 0, sumWaitingTime3 = 0, sumWaitingTime2 = 0, sumWaitingTime1 = 0;
+    // total
+    int totalTurnaroundTime = 0;
+    int totalCBT = 0;
+    int totalWaitingTime = 0;
+    int childNumber = 30;
+
+    // per priority
+    int sumTurnaroundTime[7];
+    int sumCBT[7];
+    int sumWaitingTime[7];
+    int childPerClass = 5;
 
     for (k = 0; k < 30; k++)
     {
         if (0 <= k && k <= 4)
         {
-            sumTurnaroundTime6 += (times[k].terminationTime - times[k].creationTime);
-            sumCBT6 += times[k].runningTime;
-            sumWaitingTime6 += times[k].readyTime;
+            sumTurnaroundTime[6] += (times[k].terminationTime - times[k].creationTime);
+            sumCBT[6] += times[k].runningTime;
+            sumWaitingTime[6] += times[k].readyTime;
         }
         else if (5 <= k && k <= 9)
         {
-            sumTurnaroundTime5 += (times[k].terminationTime - times[k].creationTime);
-            sumCBT5 += times[k].runningTime;
-            sumWaitingTime5 += times[k].readyTime;
+            sumTurnaroundTime[5] += (times[k].terminationTime - times[k].creationTime);
+            sumCBT[5] += times[k].runningTime;
+            sumWaitingTime[5] += times[k].readyTime;
         }
         else if (10 <= k && k <= 14)
         {
-            sumTurnaroundTime4 += (times[k].terminationTime - times[k].creationTime);
-            sumCBT4 += times[k].runningTime;
-            sumWaitingTime4 += times[k].readyTime;
+            sumTurnaroundTime[4] += (times[k].terminationTime - times[k].creationTime);
+            sumCBT[4] += times[k].runningTime;
+            sumWaitingTime[4] += times[k].readyTime;
         }
         else if (15 <= k && k <= 19)
         {
-            sumTurnaroundTime3 += (times[k].terminationTime - times[k].creationTime);
-            sumCBT3 += times[k].runningTime;
-            sumWaitingTime3 += times[k].readyTime;
+            sumTurnaroundTime[3] += (times[k].terminationTime - times[k].creationTime);
+            sumCBT[3] += times[k].runningTime;
+            sumWaitingTime[3] += times[k].readyTime;
         }
         else if (20 <= k && k <= 24)
         {
-            sumTurnaroundTime2 += (times[k].terminationTime - times[k].creationTime);
-            sumCBT2 += times[k].runningTime;
-            sumWaitingTime2 += times[k].readyTime;
+            sumTurnaroundTime[2] += (times[k].terminationTime - times[k].creationTime);
+            sumCBT[2] += times[k].runningTime;
+            sumWaitingTime[2] += times[k].readyTime;
         }
         else if (25 <= k && k <= 29)
         {
-            sumTurnaroundTime1 += (times[k].terminationTime - times[k].creationTime);
-            sumCBT1 += times[k].runningTime;
-            sumWaitingTime1 += times[k].readyTime;
+            sumTurnaroundTime[1] += (times[k].terminationTime - times[k].creationTime);
+            sumCBT[1] += times[k].runningTime;
+            sumWaitingTime[1] += times[k].readyTime;
         }
 
-        sumTurnaroundTime += (times[k].terminationTime - times[k].creationTime);
-        sumCBT += times[k].runningTime;
-        sumWaitingTime += times[k].readyTime;
+        totalTurnaroundTime += (times[k].terminationTime - times[k].creationTime);
+        totalCBT += times[k].runningTime;
+        totalWaitingTime += times[k].readyTime;
 
         printf(1, "Child number : %d \n", (k + 1));
         printf(1, "Turnaround time : %d  \n", (times[k].terminationTime - times[k].creationTime));
@@ -133,72 +137,32 @@ int main(void)
         printf(1, "\n");
     }
 
-    // calculating parameters
-    int childNumber = 30;
-    int avgTurnaroundTime = sumTurnaroundTime / childNumber;
-    int avgCBT = sumCBT / childNumber;
-    int avgWaitingTime = sumWaitingTime / childNumber;
+    // avg - total
+    int avgTurnaroundTime_total = totalTurnaroundTime / childNumber;
+    int avgCBT_total = totalCBT / childNumber;
+    int avgWaitingTime_total = totalWaitingTime / childNumber;
 
-    int childPerClass = 5;
+    // avg - per priority
+    int avgTurnaroundTime[7];
+    int avgCBT[7];
+    int avgWaitingTime[7];
 
-    int avgTurnaroundTime6 = sumTurnaroundTime6 / childPerClass;
-    int avgCBT6 = sumCBT6 / childPerClass;
-    int avgWaitingTime6 = sumWaitingTime6 / childPerClass;
+    for (int t = 1; t < 7; t++)
+    {
+        avgTurnaroundTime[t] = sumTurnaroundTime[t] / childPerClass;
+        avgCBT[t] = sumCBT[t] / childPerClass;
+        avgWaitingTime[t] = sumWaitingTime[t] / childPerClass;
 
-    int avgTurnaroundTime5 = sumTurnaroundTime5 / childPerClass;
-    int avgCBT5 = sumCBT5 / childPerClass;
-    int avgWaitingTime5 = sumWaitingTime5 / childPerClass;
-
-    int avgTurnaroundTime4 = sumTurnaroundTime4 / childPerClass;
-    int avgCBT4 = sumCBT4 / childPerClass;
-    int avgWaitingTime4 = sumWaitingTime4 / childPerClass;
-
-    int avgTurnaroundTime3 = sumTurnaroundTime3 / childPerClass;
-    int avgCBT3 = sumCBT3 / childPerClass;
-    int avgWaitingTime3 = sumWaitingTime3 / childPerClass;
-
-    int avgTurnaroundTime2 = sumTurnaroundTime2 / childPerClass;
-    int avgCBT2 = sumCBT2 / childPerClass;
-    int avgWaitingTime2 = sumWaitingTime2 / childPerClass;
-
-    int avgTurnaroundTime1 = sumTurnaroundTime1 / childPerClass;
-    int avgCBT1 = sumCBT1 / childPerClass;
-    int avgWaitingTime1 = sumWaitingTime1 / childPerClass;
-
-    printf(1, "\nPriority 6 : \n");
-    printf(1, "Average Turnaround time : %d  \n", avgTurnaroundTime6);
-    printf(1, "Average CBT : %d  \n", avgCBT6);
-    printf(1, "Average Waiting time : %d  \n", avgWaitingTime6);
-
-    printf(1, "\nPriority 5 : \n");
-    printf(1, "Average Turnaround time : %d  \n", avgTurnaroundTime5);
-    printf(1, "Average CBT : %d  \n", avgCBT5);
-    printf(1, "Average Waiting time : %d  \n", avgWaitingTime5);
-
-    printf(1, "\nPriority 4 : \n");
-    printf(1, "Average Turnaround time : %d  \n", avgTurnaroundTime4);
-    printf(1, "Average CBT : %d  \n", avgCBT4);
-    printf(1, "Average Waiting time : %d  \n", avgWaitingTime4);
-
-    printf(1, "\nPriority 3 : \n");
-    printf(1, "Average Turnaround time : %d  \n", avgTurnaroundTime3);
-    printf(1, "Average CBT : %d  \n", avgCBT3);
-    printf(1, "Average Waiting time : %d  \n", avgWaitingTime3);
-
-    printf(1, "\nPriority 2 : \n");
-    printf(1, "Average Turnaround time : %d  \n", avgTurnaroundTime2);
-    printf(1, "Average CBT : %d  \n", avgCBT2);
-    printf(1, "Average Waiting time : %d  \n", avgWaitingTime2);
-
-    printf(1, "\nPriority 1 : \n");
-    printf(1, "Average Turnaround time : %d  \n", avgTurnaroundTime1);
-    printf(1, "Average CBT : %d  \n", avgCBT1);
-    printf(1, "Average Waiting time : %d  \n", avgWaitingTime1);
+        printf(1, "\nPriority %d : \n", t);
+        printf(1, "Average Turnaround time : %d  \n", avgTurnaroundTime[t]);
+        printf(1, "Average CBT : %d  \n", avgCBT[t]);
+        printf(1, "Average Waiting time : %d  \n", avgWaitingTime[t]);
+    }
 
     printf(1, "\nAll Processes : \n");
-    printf(1, "Average Turnaround time : %d  \n", avgTurnaroundTime);
-    printf(1, "Average CBT : %d  \n", avgCBT);
-    printf(1, "Average Waiting time : %d  \n", avgWaitingTime);
+    printf(1, "Average Turnaround time : %d  \n", avgTurnaroundTime_total);
+    printf(1, "Average CBT : %d  \n", avgCBT_total);
+    printf(1, "Average Waiting time : %d  \n", avgWaitingTime_total);
 
     exit();
 }

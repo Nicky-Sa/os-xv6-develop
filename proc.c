@@ -7,7 +7,7 @@
 #include "proc.h"
 #include "spinlock.h"
 
-#define SYSCALLS_NUMBER 27
+#define SYSCALLS_NUMBER 32
 
 struct
 {
@@ -93,6 +93,7 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
   p->priority = 3; // initializing the priority
+  p->queue = 1;    // initializing the queue to default queue
 
   release(&ptable.lock);
 
@@ -346,7 +347,7 @@ int wait(void)
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
 
-int selectedScheduler = 0; // 0 = Default , 1 = Modified RR , 2 = Priority based
+//int selectedScheduler = 0; // 0 = Default , 1 = Modified RR , 2 = Priority based
 
 void scheduler(void)
 {
@@ -360,7 +361,125 @@ void scheduler(void)
     // Enable interrupts on this processor.
     sti();
 
-    if (selectedScheduler == 2) // 2 = Priority based
+    if (selectedScheduler == 3) // 3 = multi Layered Queued
+    {
+
+      // Queue 1 : Default
+      RR_active = 0;
+      acquire(&ptable.lock);
+      for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+      {
+        if (p->state != RUNNABLE || p->queue != 1)
+          continue;
+
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+      }
+      release(&ptable.lock);
+
+      // Queue 2 : RR
+      RR_active = 1;
+      acquire(&ptable.lock);
+      for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+      {
+        if (p->state != RUNNABLE || p->queue != 2)
+          continue;
+
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+      }
+      release(&ptable.lock);
+
+      // Queue 3 : Priority based (Smaller number ~ Higher priority)
+      RR_active = 0;
+      acquire(&ptable.lock);
+
+      // Loop over process table looking for the process with the highest priority.
+
+      struct proc *highp = 0;
+
+      for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+      {
+        if (p->state != RUNNABLE || p->queue != 3)
+          continue;
+
+        highp = p;
+        for (p1 = highp; p1 < &ptable.proc[NPROC]; p1++)
+        {
+          if (p1->state != RUNNABLE || p->queue != 3)
+            continue;
+
+          if (p1->priority < highp->priority)
+            highp = p1;
+        }
+        p = highp;
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+      }
+      release(&ptable.lock);
+
+      // Queue 4 : Priority based (Smaller number ~ Lower priority)
+      RR_active = 0;
+      acquire(&ptable.lock);
+
+      // Loop over process table looking for the process with the highest priority.
+
+      struct proc *highp1 = 0;
+
+      for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+      {
+        if (p->state != RUNNABLE || p->queue != 4)
+          continue;
+
+        highp1 = p;
+        for (p1 = highp1; p1 < &ptable.proc[NPROC]; p1++)
+        {
+          if (p1->state != RUNNABLE || p->queue != 4)
+            continue;
+
+          if (p1->priority > highp1->priority)
+            highp1 = p1;
+        }
+        p = highp1;
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+      }
+      release(&ptable.lock);
+    }
+
+    else if (selectedScheduler == 2) // 2 = Priority based (Smaller number ~ Higher priority)
     {
       acquire(&ptable.lock);
       // Loop over process table looking for the process with the highest priority.
@@ -395,6 +514,7 @@ void scheduler(void)
       }
       release(&ptable.lock);
     }
+
     else // 0 = Default , 1 = Modified RR
     {
       // Loop over process table looking for process to run.
@@ -646,16 +766,19 @@ int waitWithTimings(struct timing *times)
   struct proc *p;
   int havekids, pid;
   struct proc *curproc = myproc();
-    
+
   acquire(&ptable.lock);
-  for(;;){
+  for (;;)
+  {
     // Scan through table looking for exited children.
     havekids = 0;
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != curproc)
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    {
+      if (p->parent != curproc)
         continue;
       havekids = 1;
-      if(p->state == ZOMBIE){
+      if (p->state == ZOMBIE)
+      {
         // Found one.
         pid = p->pid;
         kfree(p->kstack);
@@ -677,12 +800,13 @@ int waitWithTimings(struct timing *times)
     }
 
     // No point waiting if we don't have any children.
-    if(!havekids || curproc->killed){
+    if (!havekids || curproc->killed)
+    {
       release(&ptable.lock);
       return -1;
     }
 
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
-    sleep(curproc, &ptable.lock);  //DOC: wait-sleep
+    sleep(curproc, &ptable.lock); //DOC: wait-sleep
   }
 }

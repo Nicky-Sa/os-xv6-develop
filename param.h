@@ -12,4 +12,4 @@
 #define NBUF         (MAXOPBLOCKS*3)  // size of disk block cache
 #define FSSIZE       1000  // size of file system in blocks
 
-#define QUANTUM      10 // in case of RR algorithm
+#define QUANTUM      4 // in case of RR algorithm
